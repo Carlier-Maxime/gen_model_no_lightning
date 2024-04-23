@@ -5,6 +5,7 @@ from typing import List
 import torch
 import torch.types
 import torch.distributed
+from torch.utils.data import DataLoader
 from tqdm import trange, tqdm
 from torch import optim
 
@@ -50,12 +51,15 @@ class Trainer:
             self.launch_multiprocessing(model=model, data=data, ckpt_path=self.ckpt_path)
             return
         for callback in self.callbacks: callback.on_fit_start(self, model)
-        optimizer = optim.Adam(model.parameters(), lr=model.learning_rate)
+        optimizer = model.configure_optimizers()
         self.global_step = 0
         for _ in trange(self.max_epochs, unit='epoch', leave=True):
             batch_idx = 0
-            for batch in tqdm(data.train_dataset, unit='batch', leave=True):
+            for batch in tqdm(DataLoader(data.train_dataset, batch_size=data.batch_size), unit='batch', leave=True):
                 for callback in self.callbacks: callback.on_train_batch_start(self, model, batch, batch_idx)
+                loss = model(batch['jpg'], batch)[0]
+                loss.backward()
+                optimizer.step()
                 batch_idx += 1
 
 
