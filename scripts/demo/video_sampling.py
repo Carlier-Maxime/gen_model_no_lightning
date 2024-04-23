@@ -2,7 +2,6 @@ import os
 import sys
 
 sys.path.append(os.path.realpath(os.path.join(os.path.dirname(__file__), "../../")))
-from pytorch_lightning import seed_everything
 from scripts.demo.streamlit_helpers import *
 from scripts.demo.sv3d_helpers import *
 

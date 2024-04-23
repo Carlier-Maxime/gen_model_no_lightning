@@ -1,8 +1,7 @@
-import pytorch_lightning as pl
 import torchvision
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
-
+import torch
 
 class MNISTDataDictWrapper(Dataset):
     def __init__(self, dset):
@@ -17,7 +16,7 @@ class MNISTDataDictWrapper(Dataset):
         return len(self.dset)
 
 
-class MNISTLoader(pl.LightningDataModule):
+class MNISTLoader(torch.nn.Module):
     def __init__(self, batch_size, num_workers=0, prefetch_factor=2, shuffle=True):
         super().__init__()
 

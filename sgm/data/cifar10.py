@@ -1,4 +1,4 @@
-import pytorch_lightning as pl
+import torch
 import torchvision
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
@@ -17,7 +17,7 @@ class CIFAR10DataDictWrapper(Dataset):
         return len(self.dset)
 
 
-class CIFAR10Loader(pl.LightningDataModule):
+class CIFAR10Loader(torch.nn.Module):
     def __init__(self, batch_size, num_workers=0, shuffle=True):
         super().__init__()
 

@@ -46,7 +46,7 @@ data:
   target: sgm.data.flame.FLAMELoader
   params:
     path: /media/hdd/commun/FLAME_Images/128x128_90deg_randomBg
-    batch_size: 32
+    batch_size: 4
     num_workers: 4
 
 lightning:
@@ -55,12 +55,8 @@ lightning:
       every_n_train_steps: 512
 
   callbacks:
-    metrics_over_trainsteps_checkpoint:
-      params:
-        every_n_train_steps: 1024
-
     image_logger:
-      target: main.ImageLogger
+      target: callback.ImageLogger
       params:
         disabled: False
         batch_frequency: 1024

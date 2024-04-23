@@ -2,7 +2,6 @@ import os
 import zipfile
 
 import PIL.Image
-import pytorch_lightning as pl
 from torch.utils.data import DataLoader, Dataset
 import torch
 import numpy as np
@@ -45,7 +44,7 @@ class FLAMEDataset(Dataset):
         return self._zipfile
 
 
-class FLAMELoader(pl.LightningDataModule):
+class FLAMELoader(torch.nn.Module):
     def __init__(self, path, batch_size, num_workers=0, prefetch_factor=2, shuffle=True):
         super().__init__()
         self.batch_size = batch_size

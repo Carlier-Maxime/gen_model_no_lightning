@@ -1,9 +1,9 @@
 from typing import Optional
 
+import torch.nn
 import torchdata.datapipes.iter
 import webdataset as wds
 from omegaconf import DictConfig
-from pytorch_lightning import LightningDataModule
 
 try:
     from sdata import create_dataset, create_dummy_dataset, create_loader
@@ -17,7 +17,7 @@ except ImportError as e:
     exit(1)
 
 
-class StableDataModuleFromConfig(LightningDataModule):
+class StableDataModuleFromConfig(torch.nn.Module):
     def __init__(
         self,
         train: DictConfig,

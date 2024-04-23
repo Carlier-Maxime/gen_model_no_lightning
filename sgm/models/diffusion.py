@@ -2,7 +2,6 @@ import math
 from contextlib import contextmanager
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import pytorch_lightning as pl
 import torch
 from omegaconf import ListConfig, OmegaConf
 from safetensors.torch import load_file as load_safetensors
@@ -16,7 +15,7 @@ from ..util import (default, disabled_train, get_obj_from_str,
                     instantiate_from_config, log_txt_as_img)
 
 
-class DiffusionEngine(pl.LightningModule):
+class DiffusionEngine(torch.nn.Module):
     def __init__(
         self,
         network_config,
