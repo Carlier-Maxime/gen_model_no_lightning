@@ -14,7 +14,8 @@ from callback import Callback
 
 def subprocess_fn(rank: int, trainer, local_rank: int = -1, temp_dir=None, args=None):
     trainer.global_rank = rank
-    trainer.device = torch.device(trainer.accelerator, rank if local_rank == -1 else local_rank)
+    if local_rank == -1: local_rank = rank
+    trainer.device = torch.device(trainer.accelerator, local_rank) if trainer.devices is None else trainer.devices[local_rank]
     trainer.init_distributed(temp_dir)
     trainer.fit(**args, launch_multiprocessing=False)
 
@@ -62,7 +63,6 @@ class Trainer:
                 optimizer.step()
                 batch_idx += 1
 
-
     def launch_multiprocessing(self, use_idr_torch: bool = False, **args):
         if use_idr_torch:
             import idr_torch
@@ -75,10 +75,11 @@ class Trainer:
             elif isinstance(self.devices, str):
                 self.devices = self.devices.split(',')
                 self.num_gpus = len(self.devices)
+                if len(self.devices[-1]) == 0: self.num_gpus -= 1
             torch.multiprocessing.set_start_method('spawn')
             with tempfile.TemporaryDirectory() as temp_dir:
                 if self.num_gpus == 1:
-                    subprocess_fn(rank=0, trainer=self, temp_dir=temp_dir)
+                    subprocess_fn(rank=0, trainer=self, temp_dir=temp_dir, args=args)
                 else:
                     local_rank = -1
                     torch.multiprocessing.spawn(fn=subprocess_fn, args=(self, local_rank, temp_dir, args), nprocs=self.num_gpus)
