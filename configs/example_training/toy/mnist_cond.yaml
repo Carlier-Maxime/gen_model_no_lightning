@@ -64,24 +64,24 @@ model:
 data:
   target: sgm.data.mnist.MNISTLoader
   params:
-    batch_size: 512
-    num_workers: 1
+    batch_size: 2048
+    num_workers: 32
 
 lightning:
   modelcheckpoint:
     params:
-      every_n_train_steps: 5000
+      every_n_train_steps: 50
 
   callbacks:
     metrics_over_trainsteps_checkpoint:
       params:
-        every_n_train_steps: 25000
+        every_n_train_steps: 100
 
     image_logger:
       target: main.ImageLogger
       params:
         disabled: False
-        batch_frequency: 1000
+        batch_frequency: 64
         max_images: 16
         increase_log_steps: True
         log_first_step: False
@@ -95,4 +95,4 @@ lightning:
     benchmark: True
     num_sanity_val_steps: 0
     accumulate_grad_batches: 1
-    max_epochs: 20
+    max_epochs: 100

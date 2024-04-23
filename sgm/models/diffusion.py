@@ -123,12 +123,14 @@ class DiffusionEngine(pl.LightningModule):
         all_out = []
         with torch.autocast("cuda", enabled=not self.disable_first_stage_autocast):
             for n in range(n_rounds):
-                if isinstance(self.first_stage_model.decoder, VideoDecoder):
-                    kwargs = {"timesteps": len(z[n * n_samples : (n + 1) * n_samples])}
-                else:
-                    kwargs = {}
+                kwargs = {}
+                try:
+                    if isinstance(self.first_stage_model.decoder, VideoDecoder):
+                        kwargs = {"timesteps": len(z[n * n_samples : (n + 1) * n_samples])}
+                except AttributeError:
+                    pass
                 out = self.first_stage_model.decode(
-                    z[n * n_samples : (n + 1) * n_samples], **kwargs
+                    z[n * n_samples: (n + 1) * n_samples], **kwargs
                 )
                 all_out.append(out)
         out = torch.cat(all_out, dim=0)

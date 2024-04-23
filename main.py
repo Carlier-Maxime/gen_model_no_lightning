@@ -99,7 +99,7 @@ def get_parser(**parser_kwargs):
         "--no-test",
         type=str2bool,
         const=True,
-        default=False,
+        default=True,
         nargs="?",
         help="disable test",
     )
@@ -186,6 +186,14 @@ def get_parser(**parser_kwargs):
         const=True,
         default=False,  # TODO: later default to True
         help="log to wandb",
+    )
+    parser.add_argument(
+        "--use_slurm",
+        type=str2bool,
+        nargs="?",
+        const=True,
+        default=False,
+        help="use slurm for devices and nb nodes",
     )
     if version.parse(torch.__version__) >= version.parse("2.0.0"):
         parser.add_argument(
@@ -822,6 +830,9 @@ if __name__ == "__main__":
         trainer_kwargs = {
             key: val for key, val in trainer_kwargs.items() if key not in trainer_opt
         }
+        if opt.use_slurm:
+            trainer_opt['devices'] = int(os.environ['SLURM_GPUS_ON_NODE'])
+            trainer_opt['num_nodes'] = int(os.environ['SLURM_NNODES'])
         trainer = Trainer(**trainer_opt, **trainer_kwargs)
 
         trainer.logdir = logdir  ###

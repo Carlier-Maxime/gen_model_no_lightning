@@ -1,3 +1,6 @@
+import sys
+if sys.path[0] != '.': sys.path.insert(0, '.')
+
 from st_keyup import st_keyup
 from streamlit_helpers import *
 
@@ -205,7 +208,7 @@ if __name__ == "__main__":
     )
     sampler.n_sample_steps = n_steps
     default_prompt = (
-        "A cinematic shot of a baby racoon wearing an intricate italian priest robe."
+        "A lush garden with oversized flowers and vibrant colors, inhabited by miniature animals."
     )
     prompt = st_keyup(
         "Enter a value", value=default_prompt, debounce=300, key="interactive_text"
