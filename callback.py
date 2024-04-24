@@ -159,8 +159,8 @@ class ImageLogger(Callback):
         return False
 
     def on_train_batch_end(self, trainer, model, outputs, batch, batch_idx):
-        if model.global_rank != 0: return
-        if not self.disabled and (model.global_step > 0 or self.log_first_step):
+        if trainer.global_rank != 0: return
+        if not self.disabled and (trainer.global_step > 0 or self.log_first_step):
             self.log_img(model, batch, batch_idx, split="train")
 
     def on_train_batch_start(self, trainer, model, batch, batch_idx):

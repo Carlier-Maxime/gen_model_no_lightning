@@ -62,10 +62,12 @@ class Trainer:
             for batch in p_bar:
                 for key, value in batch.items(): batch[key] = value.to(self.device)
                 for callback in self.callbacks: callback.on_train_batch_start(self, model, batch, batch_idx)
-                loss = model(batch['jpg'], batch)[0]
+                outs = model(batch['jpg'], batch)
+                loss = outs[0]
                 p_bar.set_postfix(loss=loss.item())
                 loss.backward()
                 optimizer.step()
+                for callback in self.callbacks: callback.on_train_batch_end(self, model, outs[1], batch, batch_idx)
                 batch_idx += 1
 
     def launch_multiprocessing(self, use_idr_torch: bool = False, **args):
