@@ -15,7 +15,7 @@ model:
       params:
         in_channels: 3
         out_channels: 3
-        model_channels: 128
+        model_channels: 32
         attention_resolutions: []
         num_res_blocks: 4
         channel_mult: [1, 2, 2]
@@ -45,7 +45,7 @@ model:
 data:
   target: sgm.data.flame.FLAMELoader
   params:
-    path: /media/hdd/commun/FLAME_Images/128x128_90deg_randomBg
+    path: /media/hdd/commun/FLAME_Images/32x32_90deg_randomBg
     batch_size: 4
     num_workers: 4
 
