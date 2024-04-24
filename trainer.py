@@ -56,9 +56,12 @@ class Trainer:
         self.global_step = 0
         for _ in trange(self.max_epochs, unit='epoch', leave=True):
             batch_idx = 0
-            for batch in tqdm(DataLoader(data.train_dataset, batch_size=data.batch_size), unit='batch', leave=True):
+            p_bar = tqdm(DataLoader(data.train_dataset, batch_size=data.batch_size), unit='batch', leave=True)
+            p_bar.set_postfix(loss='?')
+            for batch in p_bar:
                 for callback in self.callbacks: callback.on_train_batch_start(self, model, batch, batch_idx)
                 loss = model(batch['jpg'], batch)[0]
+                p_bar.set_postfix(loss=loss.item())
                 loss.backward()
                 optimizer.step()
                 batch_idx += 1
