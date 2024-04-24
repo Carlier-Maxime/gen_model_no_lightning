@@ -301,6 +301,10 @@ if __name__ == "__main__":
             "image_logger": {
                 "target": "callback.ImageLogger",
                 "params": {"batch_frequency": 1000, "max_images": 4, "clamp": True},
+            },
+            "ckpt_logger": {
+                "target": "callback.CheckpointLogger",
+                "params": {"batch_frequency": 1000, "ckptdir": ckptdir}
             }
         }
 

@@ -63,6 +63,12 @@ callbacks:
         N: 16
         n_rows: 4
 
+  ckpt_logger:
+    target: callback.CheckpointLogger
+    params:
+      batch_frequency: 256
+      log_first_step: False
+
 trainer:
   devices: 0,
   benchmark: True

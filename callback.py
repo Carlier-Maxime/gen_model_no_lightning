@@ -208,3 +208,15 @@ class SetupCallback(Callback):
             self.config,
             os.path.join(self.cfgdir, "{}-project.yaml".format(self.now)),
         )
+
+
+class CheckpointLogger(Callback):
+    def __init__(self, ckptdir: str, batch_frequency: int, log_first_step: bool = False):
+        super().__init__()
+        self.ckptdir = ckptdir
+        self.batch_frequency = batch_frequency
+        self.log_first_step = log_first_step
+
+    def on_train_batch_end(self, trainer, model, outputs, batch, batch_idx):
+        if (trainer.global_rank != 0) or (trainer.global_step == 0 and not self.log_first_step) or (trainer.global_step % self.batch_frequency != 0): return
+        trainer.save_checkpoint(os.path.join(self.ckptdir, "weights_gs-{:06}_e-{:06}_b-{:06}.ckpt".format(trainer.global_step, trainer.current_epoch, batch_idx)))
