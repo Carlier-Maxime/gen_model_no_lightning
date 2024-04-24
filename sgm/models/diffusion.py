@@ -17,26 +17,26 @@ from ..util import (default, disabled_train, get_obj_from_str,
 
 class DiffusionEngine(torch.nn.Module):
     def __init__(
-        self,
-        network_config,
-        denoiser_config,
-        first_stage_config,
-        conditioner_config: Union[None, Dict, ListConfig, OmegaConf] = None,
-        sampler_config: Union[None, Dict, ListConfig, OmegaConf] = None,
-        optimizer_config: Union[None, Dict, ListConfig, OmegaConf] = None,
-        scheduler_config: Union[None, Dict, ListConfig, OmegaConf] = None,
-        loss_fn_config: Union[None, Dict, ListConfig, OmegaConf] = None,
-        network_wrapper: Union[None, str] = None,
-        ckpt_path: Union[None, str] = None,
-        use_ema: bool = False,
-        ema_decay_rate: float = 0.9999,
-        scale_factor: float = 1.0,
-        disable_first_stage_autocast=False,
-        input_key: str = "jpg",
-        log_keys: Union[List, None] = None,
-        no_cond_log: bool = False,
-        compile_model: bool = False,
-        en_and_decode_n_samples_a_time: Optional[int] = None,
+            self,
+            network_config,
+            denoiser_config,
+            first_stage_config,
+            conditioner_config: Union[None, Dict, ListConfig, OmegaConf] = None,
+            sampler_config: Union[None, Dict, ListConfig, OmegaConf] = None,
+            optimizer_config: Union[None, Dict, ListConfig, OmegaConf] = None,
+            scheduler_config: Union[None, Dict, ListConfig, OmegaConf] = None,
+            loss_fn_config: Union[None, Dict, ListConfig, OmegaConf] = None,
+            network_wrapper: Union[None, str] = None,
+            ckpt_path: Union[None, str] = None,
+            use_ema: bool = False,
+            ema_decay_rate: float = 0.9999,
+            scale_factor: float = 1.0,
+            disable_first_stage_autocast=False,
+            input_key: str = "jpg",
+            log_keys: Union[List, None] = None,
+            no_cond_log: bool = False,
+            compile_model: bool = False,
+            en_and_decode_n_samples_a_time: Optional[int] = None,
     ):
         super().__init__()
         self.log_keys = log_keys
@@ -82,8 +82,8 @@ class DiffusionEngine(torch.nn.Module):
         self.en_and_decode_n_samples_a_time = en_and_decode_n_samples_a_time
 
     def init_from_ckpt(
-        self,
-        path: str,
+            self,
+            path: str,
     ) -> None:
         if path.endswith("ckpt"):
             sd = torch.load(path, map_location="cpu")["state_dict"]
@@ -125,7 +125,7 @@ class DiffusionEngine(torch.nn.Module):
                 kwargs = {}
                 try:
                     if isinstance(self.first_stage_model.decoder, VideoDecoder):
-                        kwargs = {"timesteps": len(z[n * n_samples : (n + 1) * n_samples])}
+                        kwargs = {"timesteps": len(z[n * n_samples: (n + 1) * n_samples])}
                 except AttributeError:
                     pass
                 out = self.first_stage_model.decode(
@@ -143,7 +143,7 @@ class DiffusionEngine(torch.nn.Module):
         with torch.autocast("cuda", enabled=not self.disable_first_stage_autocast):
             for n in range(n_rounds):
                 out = self.first_stage_model.encode(
-                    x[n * n_samples : (n + 1) * n_samples]
+                    x[n * n_samples: (n + 1) * n_samples]
                 )
                 all_out.append(out)
         z = torch.cat(all_out, dim=0)
@@ -237,12 +237,12 @@ class DiffusionEngine(torch.nn.Module):
 
     @torch.no_grad()
     def sample(
-        self,
-        cond: Dict,
-        uc: Union[Dict, None] = None,
-        batch_size: int = 16,
-        shape: Union[None, Tuple, List] = None,
-        **kwargs,
+            self,
+            cond: Dict,
+            uc: Union[Dict, None] = None,
+            batch_size: int = 16,
+            shape: Union[None, Tuple, List] = None,
+            **kwargs,
     ):
         randn = torch.randn(batch_size, *shape).to(self.device)
 
@@ -263,7 +263,7 @@ class DiffusionEngine(torch.nn.Module):
 
         for embedder in self.conditioner.embedders:
             if (
-                (self.log_keys is None) or (embedder.input_key in self.log_keys)
+                    (self.log_keys is None) or (embedder.input_key in self.log_keys)
             ) and not self.no_cond_log:
                 x = batch[embedder.input_key][:n]
                 if isinstance(x, torch.Tensor):
@@ -293,12 +293,12 @@ class DiffusionEngine(torch.nn.Module):
 
     @torch.no_grad()
     def log_images(
-        self,
-        batch: Dict,
-        N: int = 8,
-        sample: bool = True,
-        ucg_keys: List[str] = None,
-        **kwargs,
+            self,
+            batch: Dict,
+            N: int = 8,
+            sample: bool = True,
+            ucg_keys: List[str] = None,
+            **kwargs,
     ) -> Dict:
         conditioner_input_keys = [e.input_key for e in self.conditioner.embedders]
         if ucg_keys:
