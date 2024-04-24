@@ -131,7 +131,7 @@ class ImageLogger(Callback):
                         images[k] = torch.clamp(images[k], -1.0, 1.0)
 
             self.log_local(
-                model.logger.save_dir,
+                trainer.logdir,
                 split,
                 images,
                 trainer.global_step,
