@@ -55,7 +55,7 @@ class Trainer:
         model = model.to(self.device)
         optimizer = model.configure_optimizers()
         self.global_step = 0
-        for _ in trange(self.max_epochs, unit='epoch', leave=True):
+        for self.current_epoch in trange(self.max_epochs, unit='epoch', leave=True):
             batch_idx = 0
             p_bar = tqdm(DataLoader(data.train_dataset, batch_size=data.batch_size), unit='batch', leave=True)
             p_bar.set_postfix(loss='?')
@@ -69,6 +69,7 @@ class Trainer:
                 optimizer.step()
                 for callback in self.callbacks: callback.on_train_batch_end(self, model, outs[1], batch, batch_idx)
                 batch_idx += 1
+                self.global_step += 1
 
     def launch_multiprocessing(self, use_idr_torch: bool = False, **args):
         if use_idr_torch:
