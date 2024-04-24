@@ -46,7 +46,7 @@ data:
   target: sgm.data.flame.FLAMELoader
   params:
     path: /media/hdd/commun/FLAME_Images/32x32_90deg_randomBg
-    batch_size: 4
+    batch_size: 512
     num_workers: 4
 
 lightning:
