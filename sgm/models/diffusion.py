@@ -242,9 +242,10 @@ class DiffusionEngine(torch.nn.Module):
             uc: Union[Dict, None] = None,
             batch_size: int = 16,
             shape: Union[None, Tuple, List] = None,
+            device: torch.device = torch.device("cuda"),
             **kwargs,
     ):
-        randn = torch.randn(batch_size, *shape).to(self.device)
+        randn = torch.randn(batch_size, *shape).to(device)
 
         denoiser = lambda input, sigma, c: self.denoiser(
             self.model, input, sigma, c, **kwargs
@@ -322,7 +323,7 @@ class DiffusionEngine(torch.nn.Module):
         sampling_kwargs = {}
 
         N = min(x.shape[0], N)
-        x = x.to(self.device)[:N]
+        x = x[:N]
         log["inputs"] = x
         z = self.encode_first_stage(x)
         log["reconstructions"] = self.decode_first_stage(z)
@@ -330,12 +331,12 @@ class DiffusionEngine(torch.nn.Module):
 
         for k in c:
             if isinstance(c[k], torch.Tensor):
-                c[k], uc[k] = map(lambda y: y[k][:N].to(self.device), (c, uc))
+                c[k], uc[k] = map(lambda y: y[k][:N].to(x.device), (c, uc))
 
         if sample:
             with self.ema_scope("Plotting"):
                 samples = self.sample(
-                    c, shape=z.shape[1:], uc=uc, batch_size=N, **sampling_kwargs
+                    c, shape=z.shape[1:], uc=uc, batch_size=N, device=x.device, **sampling_kwargs
                 )
             samples = self.decode_first_stage(samples)
             log["samples"] = samples
