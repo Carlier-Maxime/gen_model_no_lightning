@@ -67,6 +67,7 @@ class Trainer:
                 p_bar.set_postfix(loss=loss.item())
                 loss.backward()
                 optimizer.step()
+                optimizer.zero_grad()
                 for callback in self.callbacks: callback.on_train_batch_end(self, model, outs[1], batch, batch_idx)
                 batch_idx += 1
                 self.global_step += 1
