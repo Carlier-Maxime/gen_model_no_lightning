@@ -51,7 +51,7 @@ class ImageLogger(Callback):
         if not increase_log_steps:
             self.log_steps = [self.batch_freq]
         self.clamp = clamp
-        self.disabled = disabled
+        self.disabled = disabled or self.max_images <= 0
         self.log_on_batch_idx = log_on_batch_idx
         self.log_images_kwargs = log_images_kwargs if log_images_kwargs else {}
         self.log_first_step = log_first_step
@@ -100,20 +100,16 @@ class ImageLogger(Callback):
                 img.save(path)
 
     # @rank_zero_only
-    def log_img(self, pl_module, batch, batch_idx, split="train"):
-        check_idx = batch_idx if self.log_on_batch_idx else pl_module.global_step
+    def log_img(self, trainer, model, batch, batch_idx, split="train"):
+        check_idx = batch_idx if self.log_on_batch_idx else trainer.global_step
         if (
                 self.check_frequency(check_idx)
-                and hasattr(pl_module, "log_images")  # batch_idx % self.batch_freq == 0
-                and callable(pl_module.log_images)
-                and
-                # batch_idx > 5 and
-                self.max_images > 0
+                and hasattr(model, "log_images")  # batch_idx % self.batch_freq == 0
+                and callable(model.log_images)
         ):
-            logger = type(pl_module.logger)
-            is_train = pl_module.training
+            is_train = model.training
             if is_train:
-                pl_module.eval()
+                model.eval()
 
             gpu_autocast_kwargs = {
                 "enabled": self.enable_autocast,  # torch.is_autocast_enabled(),
@@ -121,7 +117,7 @@ class ImageLogger(Callback):
                 "cache_enabled": torch.is_autocast_cache_enabled(),
             }
             with torch.no_grad(), torch.cuda.amp.autocast(**gpu_autocast_kwargs):
-                images = pl_module.log_images(
+                images = model.log_images(
                     batch, split=split, **self.log_images_kwargs
                 )
 
@@ -135,16 +131,16 @@ class ImageLogger(Callback):
                         images[k] = torch.clamp(images[k], -1.0, 1.0)
 
             self.log_local(
-                pl_module.logger.save_dir,
+                model.logger.save_dir,
                 split,
                 images,
-                pl_module.global_step,
-                pl_module.current_epoch,
+                trainer.global_step,
+                trainer.current_epoch,
                 batch_idx
             )
 
             if is_train:
-                pl_module.train()
+                model.train()
 
     def check_frequency(self, check_idx):
         if ((check_idx % self.batch_freq) == 0 or (check_idx in self.log_steps)) and (
@@ -161,25 +157,13 @@ class ImageLogger(Callback):
     def on_train_batch_end(self, trainer, model, outputs, batch, batch_idx):
         if trainer.global_rank != 0: return
         if not self.disabled and (trainer.global_step > 0 or self.log_first_step):
-            self.log_img(model, batch, batch_idx, split="train")
+            self.log_img(trainer, model, batch, batch_idx, split="train")
 
     def on_train_batch_start(self, trainer, model, batch, batch_idx):
         if trainer.global_rank != 0: return
         if self.log_before_first_step and trainer.global_step == 0:
             print(f"{self.__class__.__name__}: logging before training")
-            self.log_img(model, batch, batch_idx, split="train")
-
-    # @rank_zero_only
-    def on_validation_batch_end(
-            self, trainer, pl_module, outputs, batch, batch_idx, *args, **kwargs
-    ):
-        if not self.disabled and pl_module.global_step > 0:
-            self.log_img(pl_module, batch, batch_idx, split="val")
-        if hasattr(pl_module, "calibrate_grad_norm"):
-            if (
-                    pl_module.calibrate_grad_norm and batch_idx % 25 == 0
-            ) and batch_idx > 0:
-                self.log_gradients(trainer, pl_module, batch_idx=batch_idx)
+            self.log_img(trainer, model, batch, batch_idx, split="train")
 
 
 class SetupCallback(Callback):
