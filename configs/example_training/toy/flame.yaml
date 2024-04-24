@@ -46,7 +46,7 @@ data:
   target: sgm.data.flame.FLAMELoader
   params:
     path: /media/hdd/commun/FLAME_Images/32x32_90deg_randomBg
-    batch_size: 512
+    batch_size: 64
     num_workers: 4
 
 callbacks:
@@ -54,7 +54,7 @@ callbacks:
     target: callback.ImageLogger
     params:
       disabled: False
-      batch_frequency: 256
+      batch_frequency: 16
       max_images: 16
       increase_log_steps: False
       log_first_step: False
@@ -62,15 +62,17 @@ callbacks:
         use_ema_scope: False
         N: 16
         n_rows: 4
+      log_input: False
+      log_reconstruction: False
 
   ckpt_logger:
     target: callback.CheckpointLogger
     params:
-      batch_frequency: 256
+      batch_frequency: 16
       log_first_step: False
 
 trainer:
-  devices: 0,
+  devices: 1,
   benchmark: True
   num_sanity_val_steps: 0
   accumulate_grad_batches: 1

@@ -41,6 +41,9 @@ class ImageLogger(Callback):
             log_images_kwargs=None,
             log_before_first_step=False,
             enable_autocast=True,
+            log_input: bool = True,
+            log_reconstruction: bool = True,
+            log_samples: bool = True,
     ):
         super().__init__()
         self.enable_autocast = enable_autocast
@@ -56,6 +59,9 @@ class ImageLogger(Callback):
         self.log_images_kwargs = log_images_kwargs if log_images_kwargs else {}
         self.log_first_step = log_first_step
         self.log_before_first_step = log_before_first_step
+        self.log_input = log_input
+        self.log_reconstruction = log_reconstruction
+        self.log_samples = log_samples
 
     # @rank_zero_only
     def log_local(
@@ -69,6 +75,9 @@ class ImageLogger(Callback):
     ):
         root = os.path.join(save_dir, "images", split)
         for k in images:
+            if k == "inputs" and not self.log_input: continue
+            if k == "reconstructions" and not self.log_reconstruction: continue
+            if k == "samples" and not self.log_samples: continue
             if isheatmap(images[k]):
                 fig, ax = plt.subplots()
                 ax = ax.matshow(
