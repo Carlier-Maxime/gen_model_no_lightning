@@ -55,9 +55,14 @@ class Trainer:
         model = model.to(self.device)
         optimizer = model.configure_optimizers()
         self.global_step = 0
-        for self.current_epoch in trange(self.max_epochs, unit='epoch', leave=True):
+        sampler = torch.utils.data.distributed.DistributedSampler(data.train_dataset, num_replicas=self.num_gpus, rank=self.global_rank, shuffle=True)
+        dataloader = DataLoader(data.train_dataset, sampler=sampler, batch_size=data.batch_size // self.num_gpus)
+        for param in list(model.parameters()) + list(model.buffers()):
+            if param.numel() > 0 and self.num_gpus > 1:
+                torch.distributed.broadcast(param, src=0)
+        for self.current_epoch in trange(self.max_epochs, unit='epoch', leave=True, disable=self.global_rank != 0):
             batch_idx = 0
-            p_bar = tqdm(DataLoader(data.train_dataset, batch_size=data.batch_size), unit='batch', leave=True)
+            p_bar = tqdm(dataloader, unit='batch', leave=True, disable=self.global_rank != 0)
             p_bar.set_postfix(loss='?')
             for batch in p_bar:
                 for key, value in batch.items(): batch[key] = value.to(self.device)
@@ -66,6 +71,18 @@ class Trainer:
                 loss = outs[0]
                 p_bar.set_postfix(loss=loss.item())
                 loss.backward()
+
+                params = [param for param in model.parameters() if param.numel() > 0 and param.grad is not None]
+                if len(params) > 0:
+                    flat = torch.cat([param.grad.flatten() for param in params])
+                    if self.num_gpus > 1:
+                        torch.distributed.all_reduce(flat, op=torch.distributed.ReduceOp.SUM)
+                        flat /= self.num_gpus
+                    torch.nan_to_num(flat, nan=0, posinf=1e5, neginf=-1e5, out=flat)
+                    grads = flat.split([param.numel() for param in params])
+                    for param, grad in zip(params, grads):
+                        param.grad = grad.reshape(param.shape)
+
                 optimizer.step()
                 optimizer.zero_grad()
                 for callback in self.callbacks: callback.on_train_batch_end(self, model, outs[1], batch, batch_idx)
