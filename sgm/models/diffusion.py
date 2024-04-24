@@ -150,42 +150,13 @@ class DiffusionEngine(torch.nn.Module):
         z = self.scale_factor * z
         return z
 
-    def forward(self, x, batch):
+    def forward(self, batch):
+        x = self.get_input(batch)
+        x = self.encode_first_stage(x)
         loss = self.loss_fn(self.model, self.denoiser, self.conditioner, x, batch)
         loss_mean = loss.mean()
         loss_dict = {"loss": loss_mean}
         return loss_mean, loss_dict
-
-    def shared_step(self, batch: Dict) -> Any:
-        x = self.get_input(batch)
-        x = self.encode_first_stage(x)
-        batch["global_step"] = self.global_step
-        loss, loss_dict = self(x, batch)
-        return loss, loss_dict
-
-    def training_step(self, batch, batch_idx):
-        loss, loss_dict = self.shared_step(batch)
-
-        self.log_dict(
-            loss_dict, prog_bar=True, logger=True, on_step=True, on_epoch=False
-        )
-
-        self.log(
-            "global_step",
-            self.global_step,
-            prog_bar=True,
-            logger=True,
-            on_step=True,
-            on_epoch=False,
-        )
-
-        if self.scheduler_config is not None:
-            lr = self.optimizers().param_groups[0]["lr"]
-            self.log(
-                "lr_abs", lr, prog_bar=True, logger=True, on_step=True, on_epoch=False
-            )
-
-        return loss
 
     def on_train_start(self, *args, **kwargs):
         if self.sampler is None or self.loss_fn is None:

@@ -62,7 +62,7 @@ class Trainer:
             for batch in p_bar:
                 for key, value in batch.items(): batch[key] = value.to(self.device)
                 for callback in self.callbacks: callback.on_train_batch_start(self, model, batch, batch_idx)
-                outs = model(batch['jpg'], batch)
+                outs = model(batch)
                 loss = outs[0]
                 p_bar.set_postfix(loss=loss.item())
                 loss.backward()
