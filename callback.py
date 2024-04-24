@@ -181,6 +181,7 @@ class ImageLogger(Callback):
             ) and batch_idx > 0:
                 self.log_gradients(trainer, pl_module, batch_idx=batch_idx)
 
+
 class SetupCallback(Callback):
     def __init__(
             self,
@@ -190,7 +191,6 @@ class SetupCallback(Callback):
             ckptdir,
             cfgdir,
             config,
-            lightning_config,
             debug,
             ckpt_name=None,
     ):
@@ -201,7 +201,6 @@ class SetupCallback(Callback):
         self.ckptdir = ckptdir
         self.cfgdir = cfgdir
         self.config = config
-        self.lightning_config = lightning_config
         self.debug = debug
         self.ckpt_name = ckpt_name
 
@@ -221,10 +220,10 @@ class SetupCallback(Callback):
             os.makedirs(self.ckptdir, exist_ok=True)
             os.makedirs(self.cfgdir, exist_ok=True)
 
-            if "callbacks" in self.lightning_config:
+            if "callbacks" in self.config:
                 if (
                         "metrics_over_trainsteps_checkpoint"
-                        in self.lightning_config["callbacks"]
+                        in self.config["callbacks"]
                 ):
                     os.makedirs(
                         os.path.join(self.ckptdir, "trainstep_checkpoints"),
@@ -236,13 +235,6 @@ class SetupCallback(Callback):
             OmegaConf.save(
                 self.config,
                 os.path.join(self.cfgdir, "{}-project.yaml".format(self.now)),
-            )
-
-            print("Lightning config")
-            print(OmegaConf.to_yaml(self.lightning_config))
-            OmegaConf.save(
-                OmegaConf.create({"lightning": self.lightning_config}),
-                os.path.join(self.cfgdir, "{}-lightning.yaml".format(self.now)),
             )
 
         else:

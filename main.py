@@ -266,20 +266,16 @@ if __name__ == "__main__":
         configs = [OmegaConf.load(cfg) for cfg in opt.base]
         cli = OmegaConf.from_dotlist(unknown)
         config = OmegaConf.merge(*configs, cli)
-        lightning_config = config.pop("lightning", OmegaConf.create())
         # merge trainer cli with config
-        trainer_config = lightning_config.get("trainer", OmegaConf.create())
-
-        # default to gpu
+        trainer_config = config.get("trainer", OmegaConf.create())
         trainer_config["accelerator"] = "gpu"
-        #
 
         ckpt_resume_path = opt.resume_from_checkpoint
 
         gpuinfo = trainer_config["devices"]
         print(f"Running on GPUs {gpuinfo}")
         trainer_opt = argparse.Namespace(**trainer_config)
-        lightning_config.trainer = trainer_config
+        config.trainer = trainer_config
 
         # model
         model = instantiate_from_config(config.model)
@@ -298,7 +294,6 @@ if __name__ == "__main__":
                     "ckptdir": ckptdir,
                     "cfgdir": cfgdir,
                     "config": config,
-                    "lightning_config": lightning_config,
                     "debug": opt.debug,
                     "ckpt_name": melk_ckpt_name,
                 },
@@ -309,11 +304,7 @@ if __name__ == "__main__":
             }
         }
 
-        if "callbacks" in lightning_config:
-            callbacks_cfg = lightning_config.callbacks
-        else:
-            callbacks_cfg = OmegaConf.create()
-
+        callbacks_cfg = config.callbacks if "callbacks" in config else OmegaConf.create()
         callbacks_cfg = OmegaConf.merge(default_callbacks_cfg, callbacks_cfg)
         if "ignore_keys_callback" in callbacks_cfg and ckpt_resume_path is not None:
             callbacks_cfg.ignore_keys_callback.params["ckpt_path"] = ckpt_resume_path
@@ -335,14 +326,10 @@ if __name__ == "__main__":
             trainer_opt['devices'] = int(os.environ['SLURM_GPUS_ON_NODE'])
             trainer_opt['num_nodes'] = int(os.environ['SLURM_NNODES'])
         trainer = Trainer(**trainer_opt, **trainer_kwargs)
-
-        trainer.logdir = logdir  ###
+        trainer.logdir = logdir
 
         # data
         data = instantiate_from_config(config.data)
-        # NOTE according to https://pytorch-lightning.readthedocs.io/en/latest/datamodules.html
-        # calling these ourselves should not be necessary but it is.
-        # lightning still takes care of proper multiprocessing though
         data.prepare_data()
         # data.setup()
         print("#### Data #####")
@@ -362,13 +349,13 @@ if __name__ == "__main__":
                 config.data.params.train.loader.batch_size,
                 config.model.base_learning_rate,
             )
-        ngpu = len(lightning_config.trainer.devices.strip(",").split(","))
-        if "accumulate_grad_batches" in lightning_config.trainer:
-            accumulate_grad_batches = lightning_config.trainer.accumulate_grad_batches
+        ngpu = len(config.trainer.devices.strip(",").split(","))
+        if "accumulate_grad_batches" in config.trainer:
+            accumulate_grad_batches = config.trainer.accumulate_grad_batches
         else:
             accumulate_grad_batches = 1
         print(f"accumulate_grad_batches = {accumulate_grad_batches}")
-        lightning_config.trainer.accumulate_grad_batches = accumulate_grad_batches
+        config.trainer.accumulate_grad_batches = accumulate_grad_batches
         if opt.scale_lr:
             model.learning_rate = accumulate_grad_batches * ngpu * bs * base_lr
             print(
@@ -381,6 +368,7 @@ if __name__ == "__main__":
             print("++++ NOT USING LR SCALING ++++")
             print(f"Setting learning rate to {model.learning_rate:.2e}")
 
+
         def melk():
             if trainer.global_rank == 0:
                 print("Summoning checkpoint.")
@@ -389,6 +377,7 @@ if __name__ == "__main__":
                 else:
                     ckpt_path = os.path.join(ckptdir, melk_ckpt_name)
                 trainer.save_checkpoint(ckpt_path)
+
 
         # run
         if opt.train:

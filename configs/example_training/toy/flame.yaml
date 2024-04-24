@@ -49,28 +49,23 @@ data:
     batch_size: 512
     num_workers: 4
 
-lightning:
-  modelcheckpoint:
+callbacks:
+  image_logger:
+    target: callback.ImageLogger
     params:
-      every_n_train_steps: 512
+      disabled: False
+      batch_frequency: 1024
+      max_images: 16
+      increase_log_steps: False
+      log_first_step: False
+      log_images_kwargs:
+        use_ema_scope: False
+        N: 16
+        n_rows: 4
 
-  callbacks:
-    image_logger:
-      target: callback.ImageLogger
-      params:
-        disabled: False
-        batch_frequency: 1024
-        max_images: 16
-        increase_log_steps: False
-        log_first_step: False
-        log_images_kwargs:
-          use_ema_scope: False
-          N: 16
-          n_rows: 4
-
-  trainer:
-    devices: 0,
-    benchmark: True
-    num_sanity_val_steps: 0
-    accumulate_grad_batches: 1
-    max_epochs: 1000
+trainer:
+  devices: 0,
+  benchmark: True
+  num_sanity_val_steps: 0
+  accumulate_grad_batches: 1
+  max_epochs: 1000
