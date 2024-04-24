@@ -5,6 +5,7 @@
 # envs
 .pt13
 .pt2
+.detect
 
 # directories
 /checkpoints
@@ -12,3 +13,6 @@
 /outputs
 /build
 /src
+/logs
+/.idea
+/.data
