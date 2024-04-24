@@ -42,14 +42,14 @@ class Trainer:
             self.ckpt_path = ckpt_path
         torch.save(self.model.state_dict(), ckpt_path)
 
-    def fit(self, model: torch.nn.Module | None, data, ckpt_path: str | None = None, launch_multiprocessing: bool = True):
+    def fit(self, model: torch.nn.Module | None, data, ckpt_path: str | None = None, launch_multiprocessing: bool = True, use_idr_torch: bool = False):
         if model is None:
             assert self.model is not None
         else:
             self.model = model
         if ckpt_path is not None: self.ckpt_path = ckpt_path
         if launch_multiprocessing:
-            self.launch_multiprocessing(model=model, data=data, ckpt_path=self.ckpt_path)
+            self.launch_multiprocessing(model=model, data=data, ckpt_path=self.ckpt_path, use_idr_torch=use_idr_torch)
             return
         for callback in self.callbacks: callback.on_fit_start(self, model)
         model = model.to(self.device)

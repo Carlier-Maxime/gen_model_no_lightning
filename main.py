@@ -147,12 +147,12 @@ def get_parser(**parser_kwargs):
         help="Startuptime from distributed script",
     )
     parser.add_argument(
-        "--use_slurm",
+        "--use_idr_torch",
         type=str2bool,
         nargs="?",
         const=True,
         default=False,
-        help="use slurm for devices and nb nodes",
+        help="use idr_torch for devices and nb nodes",
     )
     if version.parse(torch.__version__) >= version.parse("2.0.0"):
         parser.add_argument(
@@ -326,9 +326,6 @@ if __name__ == "__main__":
         trainer_kwargs = {
             key: val for key, val in trainer_kwargs.items() if key not in trainer_opt
         }
-        if opt.use_slurm:
-            trainer_opt['devices'] = int(os.environ['SLURM_GPUS_ON_NODE'])
-            trainer_opt['num_nodes'] = int(os.environ['SLURM_NNODES'])
         trainer = Trainer(**trainer_opt, **trainer_kwargs)
         trainer.logdir = logdir
 
@@ -386,7 +383,7 @@ if __name__ == "__main__":
         # run
         if opt.train:
             try:
-                trainer.fit(model, data, ckpt_path=ckpt_resume_path)
+                trainer.fit(model, data, ckpt_path=ckpt_resume_path, use_idr_torch=opt.use_idr_torch)
             except Exception:
                 if not opt.debug:
                     melk()
