@@ -207,43 +207,20 @@ class SetupCallback(Callback):
     def on_exception(self, trainer: Trainer, pl_module, exception):
         if not self.debug and trainer.global_rank == 0:
             print("Summoning checkpoint.")
-            if self.ckpt_name is None:
-                ckpt_path = os.path.join(self.ckptdir, "last.ckpt")
-            else:
-                ckpt_path = os.path.join(self.ckptdir, self.ckpt_name)
+            ckpt_path = os.path.join(self.ckptdir, "last.ckpt" if self.ckpt_name is None else self.ckpt_name)
             trainer.save_checkpoint(ckpt_path)
 
     def on_fit_start(self, trainer, pl_module):
-        if trainer.global_rank == 0:
-            # Create logdirs and save configs
-            os.makedirs(self.logdir, exist_ok=True)
-            os.makedirs(self.ckptdir, exist_ok=True)
-            os.makedirs(self.cfgdir, exist_ok=True)
-
-            if "callbacks" in self.config:
-                if (
-                        "metrics_over_trainsteps_checkpoint"
-                        in self.config["callbacks"]
-                ):
-                    os.makedirs(
-                        os.path.join(self.ckptdir, "trainstep_checkpoints"),
-                        exist_ok=True,
-                    )
-            print("Project config")
-            print(OmegaConf.to_yaml(self.config))
-
-            OmegaConf.save(
-                self.config,
-                os.path.join(self.cfgdir, "{}-project.yaml".format(self.now)),
-            )
-
-        else:
-            # ModelCheckpoint callback created log directory --- remove it
-            if not self.resume and os.path.exists(self.logdir):
-                dst, name = os.path.split(self.logdir)
-                dst = os.path.join(dst, "child_runs", name)
-                os.makedirs(os.path.split(dst)[0], exist_ok=True)
-                try:
-                    os.rename(self.logdir, dst)
-                except FileNotFoundError:
-                    pass
+        if trainer.global_rank != 0: return
+        os.makedirs(self.logdir, exist_ok=True)
+        os.makedirs(self.ckptdir, exist_ok=True)
+        os.makedirs(self.cfgdir, exist_ok=True)
+        if "callbacks" in self.config:
+            if "metrics_over_trainsteps_checkpoint" in self.config["callbacks"]:
+                os.makedirs(os.path.join(self.ckptdir, "trainstep_checkpoints"), exist_ok=True)
+        print("Project config")
+        print(OmegaConf.to_yaml(self.config))
+        OmegaConf.save(
+            self.config,
+            os.path.join(self.cfgdir, "{}-project.yaml".format(self.now)),
+        )
