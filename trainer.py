@@ -15,7 +15,7 @@ from callback import Callback
 def subprocess_fn(rank: int, trainer, local_rank: int = -1, temp_dir=None, args=None):
     trainer.global_rank = rank
     if local_rank == -1: local_rank = rank
-    trainer.device = torch.device(trainer.accelerator, local_rank) if trainer.devices is None else trainer.devices[local_rank]
+    trainer.device = torch.device(trainer.accelerator, local_rank if trainer.devices is None else int(trainer.devices[local_rank]))
     trainer.init_distributed(temp_dir)
     trainer.fit(**args, launch_multiprocessing=False)
 
@@ -52,6 +52,7 @@ class Trainer:
             self.launch_multiprocessing(model=model, data=data, ckpt_path=self.ckpt_path)
             return
         for callback in self.callbacks: callback.on_fit_start(self, model)
+        model = model.to(self.device)
         optimizer = model.configure_optimizers()
         self.global_step = 0
         for _ in trange(self.max_epochs, unit='epoch', leave=True):
@@ -59,6 +60,7 @@ class Trainer:
             p_bar = tqdm(DataLoader(data.train_dataset, batch_size=data.batch_size), unit='batch', leave=True)
             p_bar.set_postfix(loss='?')
             for batch in p_bar:
+                for key, value in batch.items(): batch[key] = value.to(self.device)
                 for callback in self.callbacks: callback.on_train_batch_start(self, model, batch, batch_idx)
                 loss = model(batch['jpg'], batch)[0]
                 p_bar.set_postfix(loss=loss.item())
