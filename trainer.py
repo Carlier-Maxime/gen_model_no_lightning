@@ -94,7 +94,7 @@ class Trainer:
             import idr_torch
             self.devices = None
             self.num_gpus = idr_torch.size
-            subprocess_fn(rank=idr_torch.rank, trainer=self, local_rank=idr_torch.local_rank, temp_dir=None)
+            subprocess_fn(rank=idr_torch.rank, trainer=self, local_rank=idr_torch.local_rank, temp_dir=None, args=args)
         else:
             if isinstance(self.devices, torch.device) or isinstance(self.devices, int):
                 self.num_gpus = 1
