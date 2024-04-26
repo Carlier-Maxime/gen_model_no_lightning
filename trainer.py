@@ -54,6 +54,12 @@ class Trainer:
         for callback in self.callbacks: callback.on_fit_start(self, model)
         model = model.to(self.device)
         optimizer = model.configure_optimizers()
+        scheduler = None
+        scheduler_frequency = 1
+        if isinstance(optimizer, tuple):
+            scheduler = optimizer[1][0]['scheduler']
+            scheduler_frequency = optimizer[1][0]['frequency']
+            optimizer = optimizer[0][0]
         self.global_step = 0
         sampler = torch.utils.data.distributed.DistributedSampler(data.train_dataset, num_replicas=self.num_gpus, rank=self.global_rank, shuffle=True)
         dataloader = DataLoader(data.train_dataset, sampler=sampler, batch_size=data.batch_size // self.num_gpus)
@@ -84,6 +90,8 @@ class Trainer:
                         param.grad = grad.reshape(param.shape)
 
                 optimizer.step()
+                if scheduler is not None and (scheduler_frequency == 1 or self.global_step % scheduler_frequency == 0):
+                    scheduler.step()
                 optimizer.zero_grad()
                 for callback in self.callbacks: callback.on_train_batch_end(self, model, outs[1], batch, batch_idx)
                 batch_idx += 1
