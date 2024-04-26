@@ -54,7 +54,7 @@ callbacks:
     target: callback.ImageLogger
     params:
       disabled: False
-      batch_frequency: 16
+      batch_frequency: 256
       max_images: 16
       increase_log_steps: False
       log_first_step: False
@@ -68,11 +68,11 @@ callbacks:
   ckpt_logger:
     target: callback.CheckpointLogger
     params:
-      batch_frequency: 16
+      batch_frequency: 256
       log_first_step: False
 
 trainer:
-  devices: 1,
+  devices: 0,
   benchmark: True
   num_sanity_val_steps: 0
   accumulate_grad_batches: 1
