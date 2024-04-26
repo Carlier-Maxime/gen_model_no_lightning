@@ -1,0 +1,120 @@
+model:
+  base_learning_rate: 1.0e-4
+  target: sgm.models.diffusion.DiffusionEngine
+  params:
+    scale_factor: 0.13025
+    disable_first_stage_autocast: True
+
+    scheduler_config:
+      target: sgm.lr_scheduler.LambdaLinearScheduler
+      params:
+        warm_up_steps: [10000]
+        cycle_lengths: [10000000000000]
+        f_start: [1.e-6]
+        f_max: [1.]
+        f_min: [1.]
+
+    denoiser_config:
+      target: sgm.modules.diffusionmodules.denoiser.DiscreteDenoiser
+      params:
+        num_idx: 1000
+
+        scaling_config:
+          target: sgm.modules.diffusionmodules.denoiser_scaling.EpsScaling
+        discretization_config:
+          target: sgm.modules.diffusionmodules.discretizer.LegacyDDPMDiscretization
+
+    network_config:
+      target: sgm.modules.diffusionmodules.openaimodel.UNetModel
+      params:
+        use_checkpoint: True
+        in_channels: 4
+        out_channels: 4
+        model_channels: 256
+        attention_resolutions: [1, 2, 4]
+        num_res_blocks: 2
+        channel_mult: [1, 2, 4]
+        num_head_channels: 64
+
+    first_stage_config:
+      target: sgm.models.autoencoder.AutoencoderKL
+      params:
+        ckpt_path: checkpoints/sdxl_vae.safetensors
+        embed_dim: 4
+        monitor: val/rec_loss
+        ddconfig:
+          attn_type: vanilla-xformers
+          double_z: true
+          z_channels: 4
+          resolution: 256
+          in_channels: 3
+          out_ch: 3
+          ch: 128
+          ch_mult: [1, 2, 4, 4]
+          num_res_blocks: 2
+          attn_resolutions: []
+          dropout: 0.0
+        lossconfig:
+          target: torch.nn.Identity
+
+    loss_fn_config:
+      target: sgm.modules.diffusionmodules.loss.StandardDiffusionLoss
+      params:
+        loss_weighting_config:
+          target: sgm.modules.diffusionmodules.loss_weighting.EpsWeighting
+        sigma_sampler_config:
+          target: sgm.modules.diffusionmodules.sigma_sampling.DiscreteSampling
+          params:
+            num_idx: 1000
+
+            discretization_config:
+              target: sgm.modules.diffusionmodules.discretizer.LegacyDDPMDiscretization
+
+    sampler_config:
+      target: sgm.modules.diffusionmodules.sampling.EulerEDMSampler
+      params:
+        num_steps: 50
+
+        discretization_config:
+          target: sgm.modules.diffusionmodules.discretizer.LegacyDDPMDiscretization
+
+        guider_config:
+          target: sgm.modules.diffusionmodules.guiders.VanillaCFG
+          params:
+            scale: 5.0
+
+data:
+  target: sgm.data.flame.FLAMELoader
+  params:
+    path: /media/hdd/commun/FLAME_Images/256x256_90deg_randomBg
+    batch_size: 256
+    num_workers: 4
+
+callbacks:
+  image_logger:
+    target: callback.ImageLogger
+    params:
+      disabled: False
+      batch_frequency: 256
+      max_images: 16
+      increase_log_steps: False
+      log_first_step: False
+      log_images_kwargs:
+        use_ema_scope: False
+        N: 16
+        n_rows: 4
+      log_input: False
+      log_reconstruction: False
+
+  ckpt_logger:
+    target: callback.CheckpointLogger
+    params:
+      batch_frequency: 256
+      log_first_step: False
+
+trainer:
+  devices: 0,1,
+  benchmark: True
+  num_sanity_val_steps: 0
+  accumulate_grad_batches: 1
+  max_epochs: 1000
